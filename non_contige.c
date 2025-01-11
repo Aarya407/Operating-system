@@ -9,20 +9,24 @@ typedef struct dir
 	struct dir *next;
 }NODE;
 NODE *first,*last;
-int bit[MAX],n;
+int n,fb,bit[MAX];
 
 void init()
 {
 	int i;
 	printf("Enter total no.of disk blocks:");
 	scanf("%d",&n);
+	fb=n;
 	for(i=0;i<10;i++)
 	{
 		int k=rand()%n;
-		bit[k]=1;
+		if(bit[k]!=-2)
+		{
+			bit[k]=-2;
+			fb--;
+		}
 	}
 }
-
 void show_bitvector()
 {
 	int i;
@@ -35,70 +39,72 @@ void show_bitvector()
 void show_dir()
 {
 	NODE *p;
-	printf("File\tStart\tLength\n");
+	int i;
+	printf("File\tChain\t\n");
 	p=first;
 	while(p!=NULL)
-	{
-		printf("%s\t%d\t%d\n",p->fname.p->start,p->length);
+	{	
+		i=p->start;
+		while(i!=-1)
+		{
+			printf("%d-<",i);
+			i=bit[i];
+		}
+		printf("NULL\n");
 		p=p->next;
 	}
 }
+	
 void create()
 {
 	NODE *p;
 	char fname[20];
-	int nob,i=0,j=0,start;
+	int nob,i,j;
 	printf("Enter file name:");
-	scanf("%s",&fname);
+	scanf("%s",&fname);	
 	printf("Enter no of blocks:");
-	scanf("%s",&nob);	
-	while(1)
+	scanf("%d",&nob);
+	
+	if(nob>fb)
 	{
-		while(i<n)
-		{
-			if(bit[i]==0)
-			break;
-			i++;
-		}
-		if(i<n)
-		{
-			start=i;
-			j=1;
-			while(j<nob && i<n && bit[i]==0)
-			{
-				i++;
-				j++;
-			}
-			if(j==nob)
-			{
-				p=(NODE*)malloc(sizeof(NODE));
-				strcpy(p->fname,fname);
-				p->start=start;
-				p->length=nob;
-				p->next=NULL;
-				if(first==NULL)
-					first=p;
-				else
-					last->next=p;
-				last=p;
-				for(j=0;j<nob;j++)
-					bit[j+start]=1;
-			printf("File %s created successfully.\n",fname);
-			return;
-			}
-		}
-		else
-		{
-			printf("Fail to create file %s\n",fname);
-			return;
-		}
+		printf("Failed to create file %s\n",fname);
+		return;
 	}
+	for(i=0;i<n;i++)
+	{
+		if(bit[i]==0)
+		break;
+	}
+	p=(NODE*)malloc(sizeof(NODE));
+	strcpy(p->fname,fname);
+	p->start=i;
+	p->next=NULL;
+	if(first==NULL)
+		first=p;
+	else
+		last->next=p;
+		last=p;
+		fb-=nob;
+		j=i+1;
+		nob--;
+	while(nob>0)
+	{
+		if(bit[j]==0)
+		{
+			bit[i]=j;
+			i=j;
+			nob--;
+		}
+		j++;
+	}
+	bit[i]=-1;
+	printf("File %s created successfully.\n",fname);
 }
 void delete()
 {
 	NODE *p,*q;
 	char fname[20];
-	int i;
+	int nob=0,i,j;
 	printf("Enter file to be deleted:\n");
 	scanf("%s",fname);
 	p=q=first;
@@ -109,13 +115,20 @@ void delete()
 		q=p;
 		p=p->next;
 	}
-	if(p=NULL)
+	if(p==NULL)
 	{
 		printf("File %s not found \n",fname);
 		return;
 	}
-	for(i=0;i<p->length;i++)
-		bit[p->start+i]=0;
+	i=p->start;
+	while(i!=-1)
+	{
+		nob++;
+		j=i;
+		i=bit[i];
+		bit[j]=0;
+	}
+	fb+=nob;
 	if(p==first)
 		first=first->next;
 	else if(p==last)
@@ -124,17 +137,16 @@ void delete()
 		last->next=NULL;
 	}
 	else
-	{
 		q->next=p->next;
-	}
 	free(p);
 	printf("File %s deleted successfully.\n",fname);
 }
+
 int main()
 {
 	int ch;
 	init();
-	while(1)
+ 	while(1)
 	{
 		printf("1.Show bit vector\n");
 		printf("2.Create nes file\n");
@@ -163,4 +175,4 @@ int main()
 	}
 	return 0;
 }
-		
+	
